@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scam Simulator (Safe Test)</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h2>🔐 Scam Simulator dApp</h2>
+  <p><i>Auto-filled spender address (scammer style)</i></p>
+
+  <button id="connect">Connect Wallet</button><br><br>
+  <label>Spender Address:</label><br>
+  <input id="spender" value="0x1111111111111111111111111111111111111111" readonly /><br><br>
+  <label>Amount (USDT ✔️ Sepolia testnet):</label><br>
+  <input id="amount" placeholder="e.g. 50" /><br><br>
+  <button id="approve">Approve</button>
+  <p id="status"></p>
+
+  <script>
+    const usdt = {
+      address: "0x148f2aC944c6AA1Eb51Ff5d246d0a6A6e65c6780", // Sepolia USDT
+      abi: ["function approve(address spender, uint256 amount) public returns (bool)"]
+    };
+    let signer;
+
+    async function connect() {
+      if (!window.ethereum) return msg("Install MetaMask/Trust Wallet", "error");
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      msg("Wallet connected: " + await signer.getAddress(), "info");
+    }
+
+    async function doApprove() {
+      if (!signer) return msg("Connect wallet first", "error");
+      const spender = document.getElementById("spender").value;
+      const amt = document.getElementById("amount").value;
+      if (!amt) return msg("Enter amount", "error");
+      const contract = new ethers.Contract(usdt.address, usdt.abi, signer);
+      try {
+        msg("Approving...", "info");
+        const tx = await contract.approve(spender, ethers.utils.parseUnits(amt, 6));
+        msg("Txn sent: " + tx.hash, "info"); 
+        await tx.wait();
+        msg("✅ Approved (test). No funds moved. Safe simulation!", "success");
+      } catch (err) {
+        msg("Error: " + err.message, "error");
+      }
+    }
+
+    function msg(m, cls="") {
+      const el = document.getElementById("status");
+      el.innerText = m;
+      el.style.color = cls == "error" ? "red" : cls == "success" ? "green" : "black";
+    }
+
+    document.getElementById("connect").onclick = connect;
+    document.getElementById("approve").onclick = doApprove;
+  </script>
+</body>
+</html>
